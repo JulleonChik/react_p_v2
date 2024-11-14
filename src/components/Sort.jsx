@@ -1,17 +1,25 @@
 import React, { useEffect, useRef } from 'react';
 
-const sortOptions = ['популярности', 'цене', 'алфавиту'];
+const sortOptionsList = [
+  { name: 'популярности', sortProperty: 'rating', order: 'desc' },
+  { name: 'возрастанию цены', sortProperty: 'price', order: 'asc' },
+  { name: 'убыванию цены', sortProperty: 'price', order: 'desc' },
+  { name: 'алфавиту', sortProperty: 'title', order: 'asc' },
+];
 
-function Sort() {
-  const [isVisiblePopup, setVisiblePopup] = React.useState(false);
-  const [selectedSortOption, setSelectedSortOption] = React.useState(0);
-  const sortRef = useRef();
+function Sort({ selectedSortOption, setSelectedSortOption }) {
+  const [isVisiblePopup, setVisiblePopup] = React.useState(false); // состояние видимости popup и функция для изменения этого состояния
+  const sortRef = useRef(); // ссылка на элемент DOM
 
-  const toggleVisiblePopup = () => setVisiblePopup(!isVisiblePopup);
+  const toggleVisiblePopup = () => setVisiblePopup(!isVisiblePopup); // функция для изменения состояния видимости popup
 
-  const onSelectSortOption = (index) => {
-    if (index !== selectedSortOption) {
-      setSelectedSortOption(index);
+  const onSelectSortOption = (obj) => {
+    if (
+      obj.sortProperty !== selectedSortOption.sortProperty ||
+      obj.order !== selectedSortOption.order
+    ) {
+      // если выбранный параметр сортировки не совпадает с текущим, то устанавливается новый параметр сортировки
+      setSelectedSortOption(obj);
     }
     setVisiblePopup(false);
   };
@@ -23,9 +31,9 @@ function Sort() {
   };
 
   useEffect(() => {
-    document.addEventListener('click', handleOutsideClick);
+    document.addEventListener('click', handleOutsideClick, { passive: true });
     return () => {
-      document.removeEventListener('click', handleOutsideClick);
+      document.removeEventListener('click', handleOutsideClick, { passive: true });
     };
   }, []);
 
@@ -45,18 +53,29 @@ function Sort() {
           />
         </svg>
         <b>Сортировка по:</b>
-        <span onClick={toggleVisiblePopup}>{sortOptions[selectedSortOption]}</span>
+        <span onClick={toggleVisiblePopup}>
+          {sortOptionsList.find(
+            (obj) =>
+              obj.sortProperty === selectedSortOption.sortProperty &&
+              obj.order === selectedSortOption.order,
+          )?.name || 'популярности'}
+        </span>
       </div>
       {isVisiblePopup && (
         <div className="sort__popup">
           <ul>
-            {sortOptions.map((sortOption, index) => (
+            {sortOptionsList.map((obj, index) => (
               <li
-                key={sortOption}
-                onClick={() => onSelectSortOption(index)}
-                className={index === selectedSortOption ? 'active' : ''}
+                key={obj.sortProperty + obj.order}
+                onClick={() => onSelectSortOption(obj)}
+                className={
+                  obj.sortProperty === selectedSortOption.sortProperty &&
+                  obj.order === selectedSortOption.order
+                    ? 'active'
+                    : ''
+                }
               >
-                {sortOption}
+                {obj.name}
               </li>
             ))}
           </ul>
