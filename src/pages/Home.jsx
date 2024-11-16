@@ -5,7 +5,7 @@ import Sort from '../components/Sort';
 import PizzaBlock from '../components/PizzaBlock';
 import Skeleton from '../components/PizzaBlock/Skeleton';
 
-function Home() {
+function Home({ searchValue }) {
   const [pizzasData, setPizzasData] = React.useState([]); // состояние данных пицц и функция для изменения этого состояния
   const [isLoading, setIsLoading] = React.useState(true); // состояние загрузки и функция для изменения этого состояния
 
@@ -51,7 +51,9 @@ function Home() {
         {
           isLoading
             ? [...new Array(6)].map((_, index) => <Skeleton key={index} />) // пока загружаются данные, отображаются скелетоны
-            : pizzasData.map((value) => <PizzaBlock key={`pizza-block-${value.id}`} {...value} />) // отображаются пиццы
+            : pizzasData
+                .filter((item) => item.title.toLowerCase().includes(searchValue.toLowerCase())) // фильтрация пицц по названию
+                .map((value) => <PizzaBlock key={`pizza-block-${value.id}`} {...value} />) // отображаются пиццы
         }
       </div>
     </div>
