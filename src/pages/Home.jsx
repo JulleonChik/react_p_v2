@@ -17,22 +17,37 @@ function Home({ searchValue }) {
   }); // состояние выбранного типа сортировки и функция для изменения этого состояния
 
   React.useEffect(() => {
-    setIsLoading(true);
-    // activeCategoryIdx = 0 - это "Все"
-    // => если не 0 то выбрана категория и в url будет добавлен параметр category с индексом категории
-    //  - 1 потому как в mockapi индекс категории начинается с 0
-    fetch(
-      `https://67321e852a1b1a4ae10eee73.mockapi.io/items?${
-        activeCategoryIdx !== 0 ? `category=${activeCategoryIdx - 1}&` : ''
-      }sortBy=${selectedSortType.sortProperty}&order=${selectedSortType.order}`,
-    ) // запрос к mockapi с параметрами категории и типа сортировки
-      .then((res) => res.json())
-      .then((items) => {
-        setPizzasData(items); // установка данных пицц
-        setIsLoading(false); // установка состояния загрузки в false
-        window.scrollTo(0, 0); // прокрутка к началу страницы
-      });
-  }, [activeCategoryIdx, selectedSortType]); // зависимости для перерисовки компонента при изменении activeCategoryIdx или selectedSortType
+    const fetchPizzas = async () => {
+      const baseUrl = 'https://67321e852a1b1a4ae10eee73.mockapi.io/items';
+      const url = new URL(baseUrl);
+
+      if (activeCategoryIdx !== 0) {
+        url.searchParams.append('category', activeCategoryIdx - 1);
+      }
+      url.searchParams.append('sortBy', selectedSortType.sortProperty);
+      url.searchParams.append('order', selectedSortType.order);
+      if (searchValue) {
+        url.searchParams.append('title', searchValue);
+      }
+
+      setIsLoading(true);
+
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const items = await response.json();
+        setPizzasData(Array.isArray(items) ? items : []);
+        window.scrollTo(0, 0);
+      } catch (error) {
+        console.error('Ошибка при загрузке:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPizzas();
+  }, [activeCategoryIdx, selectedSortType.sortProperty, selectedSortType.order, searchValue]);
 
   return (
     <div className="container">
@@ -48,13 +63,13 @@ function Home({ searchValue }) {
       </div>
       <h2 className="content__title">Все пиццы</h2>
       <div className="content__items">
-        {
-          isLoading
-            ? [...new Array(6)].map((_, index) => <Skeleton key={index} />) // пока загружаются данные, отображаются скелетоны
-            : pizzasData
-                .filter((item) => item.title.toLowerCase().includes(searchValue.toLowerCase())) // фильтрация пицц по названию
-                .map((value) => <PizzaBlock key={`pizza-block-${value.id}`} {...value} />) // отображаются пиццы
-        }
+        {isLoading ? (
+          [...new Array(6)].map((_, index) => <Skeleton key={index} />) // пока загружаются данные, отображаются скелетоны
+        ) : pizzasData?.length > 0 ? (
+          pizzasData.map((value) => <PizzaBlock key={`pizza-block-${value.id}`} {...value} />) // отображаются пиццы
+        ) : (
+          <div className="notFound">Пицц не найдено 😕</div> // Показываем сообщение если пицц нет
+        )}
       </div>
     </div>
   );
