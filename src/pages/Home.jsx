@@ -5,8 +5,10 @@ import Sort from '../components/Sort';
 import PizzaBlock from '../components/PizzaBlock';
 import Skeleton from '../components/PizzaBlock/Skeleton';
 import Pagination from '../components/Pagination';
+import { SearchContext } from '../App';
+function Home() {
+  const { searchValue } = React.useContext(SearchContext);
 
-function Home({ searchValue }) {
   const [pizzasData, setPizzasData] = React.useState([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [activeCategoryIdx, setActiveCategoryIdx] = React.useState(0);
@@ -47,11 +49,12 @@ function Home({ searchValue }) {
       fetch(url)
         .then((res) => res.json())
         .then((items) => {
-          setPizzasData(items);
+          setPizzasData(Array.isArray(items) ? items : []);
           window.scrollTo(0, 0);
         })
         .catch((error) => {
           console.error('Ошибка при загрузке:', error);
+          setPizzasData([]);
         })
         .finally(() => {
           setIsLoading(false);
