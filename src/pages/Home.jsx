@@ -4,18 +4,27 @@ import Categories from '../components/Categories';
 import Sort from '../components/Sort';
 import PizzaBlock from '../components/PizzaBlock';
 import Skeleton from '../components/PizzaBlock/Skeleton';
+import Pagination from '../components/Pagination';
 
 function Home({ searchValue }) {
-  const [pizzasData, setPizzasData] = React.useState([]); // состояние данных пицц и функция для изменения этого состояния
-  const [isLoading, setIsLoading] = React.useState(true); // состояние загрузки и функция для изменения этого состояния
-
-  const [activeCategoryIdx, setActiveCategoryIdx] = React.useState(0); // состояние индекса выбранной категории и функция для изменения этого состояния
+  const [pizzasData, setPizzasData] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [activeCategoryIdx, setActiveCategoryIdx] = React.useState(0);
   const [selectedSortType, setSelectedSortType] = React.useState({
     name: 'популярности',
     sortProperty: 'rating',
     order: 'desc',
-  }); // состояние выбранного типа сортировки и функция для изменения этого состояния
+  });
 
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const totalPages = 3;
+
+  // Обработчик смены страницы
+  const handlePageChange = (event) => {
+    setCurrentPage(event.selected + 1);
+  };
+
+  // Эффект для получения пиццы с пагинацией
   React.useEffect(() => {
     const fetchPizzas = async () => {
       const baseUrl = 'https://67321e852a1b1a4ae10eee73.mockapi.io/items';
@@ -30,47 +39,54 @@ function Home({ searchValue }) {
         url.searchParams.append('title', searchValue);
       }
 
+      url.searchParams.append('page', currentPage);
+      url.searchParams.append('limit', 4);
+
       setIsLoading(true);
 
-      try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+      fetch(url)
+        .then((res) => res.json())
+        .then((items) => {
+          setPizzasData(items);
+          window.scrollTo(0, 0);
+        })
+        .catch((error) => {
+          console.error('Ошибка при загрузке:', error);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
-        const items = await response.json();
-        setPizzasData(Array.isArray(items) ? items : []);
-        window.scrollTo(0, 0);
-      } catch (error) {
-        console.error('Ошибка при загрузке:', error);
-      } finally {
-        setIsLoading(false);
-      }
     };
+
     fetchPizzas();
-  }, [activeCategoryIdx, selectedSortType.sortProperty, selectedSortType.order, searchValue]);
+  }, [
+    currentPage,
+    activeCategoryIdx,
+    selectedSortType.sortProperty,
+    selectedSortType.order,
+    searchValue,
+  ]);
 
   return (
     <div className="container">
       <div className="content__top">
         <Categories
-          activeCategoryIdx={activeCategoryIdx} // индекс выбранной категории
-          setActiveCategoryIdx={setActiveCategoryIdx} // функция для изменения индекса выбранной категории
+          activeCategoryIdx={activeCategoryIdx}
+          setActiveCategoryIdx={setActiveCategoryIdx}
         />
-        <Sort
-          selectedSortOption={selectedSortType} // объект с выбранным параметром сортировки
-          setSelectedSortOption={setSelectedSortType} // функция для изменения выбранного параметра сортировки
-        />
+        <Sort selectedSortOption={selectedSortType} setSelectedSortOption={setSelectedSortType} />
       </div>
       <h2 className="content__title">Все пиццы</h2>
       <div className="content__items">
         {isLoading ? (
-          [...new Array(6)].map((_, index) => <Skeleton key={index} />) // пока загружаются данные, отображаются скелетоны
+          [...new Array(6)].map((_, index) => <Skeleton key={index} />)
         ) : pizzasData?.length > 0 ? (
-          pizzasData.map((value) => <PizzaBlock key={`pizza-block-${value.id}`} {...value} />) // отображаются пиццы
+          pizzasData.map((value) => <PizzaBlock key={`pizza-block-${value.id}`} {...value} />)
         ) : (
-          <div className="notFound">Пицц не найдено 😕</div> // Показываем сообщение если пицц нет
+          <div className="notFound">Пицц не найдено 😕</div>
         )}
       </div>
+      <Pagination totalPages={totalPages} onPageChange={handlePageChange} />
     </div>
   );
 }
